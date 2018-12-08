@@ -1,0 +1,25 @@
+plugins {
+    id 'java'
+}
+
+group 'edu.pucmm'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    compile "com.sparkjava:spark-core:2.7.1"
+    compile "com.sparkjava:spark-template-freemarker:2.7.1"
+    // https://mvnrepository.com/artifact/com.h2database/h2
+    compile group: 'com.h2database', name: 'h2', version: '1.4.197'
+    //Librerias de Hibernate
+    compile 'org.hibernate:hibernate-core:5.1.0.Final'
+    compile 'org.hibernate:hibernate-entitymanager:5.1.0.Final'
+    compile 'com.thedeanda:lorem:2.1'
+    compile group: 'org.apache.activemq', name: 'activemq-all', version: '5.15.1'
+}

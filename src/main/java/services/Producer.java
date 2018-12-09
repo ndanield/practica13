@@ -31,7 +31,5 @@ public class Producer {
         producer.close();
         session.close();
         connection.stop();
-
-        System.exit(0);
     }
 }

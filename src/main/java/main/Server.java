@@ -3,9 +3,10 @@ package main;
 import freemarker.template.Configuration;
 import freemarker.template.Version;
 import org.eclipse.jetty.websocket.api.Session;
-import services.BootStrapServices;
 import services.Consumer;
 import services.WebSocketHandler;
+import spark.ModelAndView;
+import spark.template.freemarker.FreeMarkerEngine;
 
 import javax.jms.JMSException;
 import java.io.IOException;
@@ -21,7 +22,8 @@ public class Server {
     public static void main(String[] args) {
 
         Configuration configuration = new Configuration(new Version(2, 3, 23));
-        configuration.setClassForTemplateLoading(Server.class, "/");
+        configuration.setClassForTemplateLoading(Server.class, "/templates");
+        FreeMarkerEngine freemarkerEngine = new FreeMarkerEngine(configuration);
         staticFiles.location("/public");
 
         String topicName = "notificacion_sensores.topic";
@@ -29,17 +31,9 @@ public class Server {
         webSocket("/sensorsUpdate", WebSocketHandler.class);
 
         get("/", (req, res) -> {
-//            StringWriter writer = new StringWriter();
-//            Map<String, Object> atributos = new HashMap<>();
-//            Template template = configuration.getTemplate("plantillas/index.ftl");
-//
-//            atributos.put("registros", "{\"registros\":" + JSON.toJson(ServicioEndpoint.getInstancia().listar()) + "}");
-//
-//            template.process(atributos, writer);
 
-//            return writer;
-            return "Hola mundo";
-        });
+            return new ModelAndView(null,"index.ftl");
+        }, freemarkerEngine);
 
         Consumer consumer = new Consumer(topicName);
         try {

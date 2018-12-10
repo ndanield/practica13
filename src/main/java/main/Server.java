@@ -2,16 +2,23 @@ package main;
 
 import freemarker.template.Configuration;
 import freemarker.template.Version;
+import models.SensorMessage;
 import org.eclipse.jetty.websocket.api.Session;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import services.Consumer;
+import services.SensorMessageDAO;
 import services.WebSocketHandler;
 import spark.ModelAndView;
 import spark.template.freemarker.FreeMarkerEngine;
+import sun.management.Sensor;
 
 import javax.jms.JMSException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static spark.Spark.*;
 
@@ -32,7 +39,13 @@ public class Server {
 
         get("/", (req, res) -> {
 
-            return new ModelAndView(null,"index.ftl");
+            Map<String, Object> model = new HashMap<>();
+
+            String json = new JSONArray(SensorMessageDAO.getInstance().findAll()).toString();
+
+            model.put("measures", json);
+
+            return new ModelAndView(model,"index.ftl");
         }, freemarkerEngine);
 
         Consumer consumer = new Consumer(topicName);

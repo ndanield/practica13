@@ -1,5 +1,6 @@
 package services;
 
+import main.Server;
 import org.apache.activemq.ActiveMQConnectionFactory;
 
 import javax.jms.*;
@@ -35,8 +36,8 @@ public class Consumer {
 
         consumer.setMessageListener(message -> {
             try {
-                TextMessage messageTexto = (TextMessage) message;
-                System.out.println("Message get: " + messageTexto.getText());
+                TextMessage messageText = (TextMessage) message;
+                Server.sendUpdateSensorsConnected(messageText.getText());
             }catch(Exception ex){
                 ex.printStackTrace();
             }

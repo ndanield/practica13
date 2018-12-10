@@ -1,140 +1,144 @@
-<html>
+<!doctype html>
+<html lang="es">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Práctica 13 - Broker de mensajería</title>
+
+    <script src="js/jquery-3.2.1.min.js"></script>
+    <#--Google charts-->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+
+    <#--Bootstrap-->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+          integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"
+            integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
+            crossorigin="anonymous"></script>
 </head>
 <body>
-<script src="webjars/chartjs/2.1.3/Chart.js"></script>
-<script>
-    var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    var config = {
-        type: 'line',
-        data: {
-            labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
-            datasets: [{
-                label: 'My First dataset',
-                backgroundColor: window.chartColors.red,
-                borderColor: window.chartColors.red,
-                data: [
-                    randomScalingFactor(),
-                    randomScalingFactor(),
-                    randomScalingFactor(),
-                    randomScalingFactor(),
-                    randomScalingFactor(),
-                    randomScalingFactor(),
-                    randomScalingFactor()
-                ],
-                fill: false,
-            }, {
-                label: 'My Second dataset',
-                fill: false,
-                backgroundColor: window.chartColors.blue,
-                borderColor: window.chartColors.blue,
-                data: [
-                    randomScalingFactor(),
-                    randomScalingFactor(),
-                    randomScalingFactor(),
-                    randomScalingFactor(),
-                    randomScalingFactor(),
-                    randomScalingFactor(),
-                    randomScalingFactor()
-                ],
-            }]
-        },
-        options: {
-            responsive: true,
-            title: {
-                display: true,
-                text: 'Chart.js Line Chart'
-            },
-            tooltips: {
-                mode: 'index',
-                intersect: false,
-            },
-            hover: {
-                mode: 'nearest',
-                intersect: true
-            },
-            scales: {
-                xAxes: [{
-                    display: true,
-                    scaleLabel: {
-                        display: true,
-                        labelString: 'Month'
-                    }
-                }],
-                yAxes: [{
-                    display: true,
-                    scaleLabel: {
-                        display: true,
-                        labelString: 'Value'
-                    }
-                }]
+    <input type="hidden" id="measures" value='${measures}'>
+    <div id="graph1" style="width: 90%; height: 500px;" class="mx-auto my-1"></div>
+    <div id="graph2" style="width: 90%; height: 500px;" class="mx-auto my-1"></div>
+
+    <script>
+        var webSocket;
+        var updateTimeInterval = 3000;
+
+        var datos = JSON.parse($("#measures").val());
+        var sensor1Data = [['FechaGeneracion', 'Temperatura', 'Humedad']];
+        var sensor2Data = [['FechaGeneracion', 'Temperatura', 'Humedad']];
+
+        for (var i = 0; i < datos.length; i++) {
+            if (datos[i].idDevice === 1) {
+                sensor1Data.push([
+                    datos[i].generationDate,
+                    datos[i].temperature,
+                    datos[i].humidity
+                ]);
+            }
+
+            if (datos[i].idDevice === 2) {
+                sensor2Data.push([
+                    datos[i].generationDate,
+                    datos[i].temperature,
+                    datos[i].humidity
+                ]);
             }
         }
-    };
 
-    window.onload = function() {
-        var ctx = document.getElementById('canvas').getContext('2d');
-        window.myLine = new Chart(ctx, config);
-    };
+        google.charts.load('current', {'packages': ['corechart']});
 
-    document.getElementById('randomizeData').addEventListener('click', function() {
-        config.data.datasets.forEach(function(dataset) {
-            dataset.data = dataset.data.map(function() {
-                return randomScalingFactor();
-            });
-
-        });
-
-        window.myLine.update();
-    });
-
-    var colorNames = Object.keys(window.chartColors);
-    document.getElementById('addDataset').addEventListener('click', function() {
-        var colorName = colorNames[config.data.datasets.length % colorNames.length];
-        var newColor = window.chartColors[colorName];
-        var newDataset = {
-            label: 'Dataset ' + config.data.datasets.length,
-            backgroundColor: newColor,
-            borderColor: newColor,
-            data: [],
-            fill: false
-        };
-
-        for (var index = 0; index < config.data.labels.length; ++index) {
-            newDataset.data.push(randomScalingFactor());
+        if (sensor1Data.length > 0) {
+            google.charts.setOnLoadCallback(drawGraph.bind(this, sensor1Data, 'Sensor #1', document.getElementById('graph1')));
+        } else {
+            document.getElementById('graph1').innerHTML = '<p>No hay datos registrados para este sensor aún</p>';
+        }
+        if (sensor2Data.length > 0) {
+            google.charts.setOnLoadCallback(drawGraph.bind(this, sensor2Data, 'Sensor #2', document.getElementById('graph2')));
+        } else {
+            document.getElementById('graph2').innerHTML = '<p>No hay datos registrados para este sensor aún</p>';
         }
 
-        config.data.datasets.push(newDataset);
-        window.myLine.update();
-    });
+        function getUpdateDataFromServer(mensaje) {
+            var dato = JSON.parse(mensaje.data);
 
-    document.getElementById('addData').addEventListener('click', function() {
-        if (config.data.datasets.length > 0) {
-            var month = MONTHS[config.data.labels.length % MONTHS.length];
-            config.data.labels.push(month);
+            if (dato.idDevice === 1) {
+                google.charts.load('current', {'packages': ['corechart']});
+                google.charts.setOnLoadCallback(drawGraph.bind(this, sensor1Data, 'Sensor #1', document.getElementById('graph1')));
 
-            config.data.datasets.forEach(function(dataset) {
-                dataset.data.push(randomScalingFactor());
-            });
+                sensor1Data.push([
+                    dato.generationDate,
+                    dato.temperature,
+                    dato.humidity
+                ]);
+            } else if (dato.idDevice === 2) {
+                google.charts.load('current', {'packages': ['corechart']});
+                google.charts.setOnLoadCallback(drawGraph.bind(this, sensor2Data, 'Sensor #2', document.getElementById('graph2')));
 
-            window.myLine.update();
+                sensor2Data.push([
+                    dato.generationDate,
+                    dato.temperature,
+                    dato.humidity
+                ]);
+            }
         }
-    });
 
-    document.getElementById('removeDataset').addEventListener('click', function() {
-        config.data.datasets.splice(0, 1);
-        window.myLine.update();
-    });
+        function drawGraph(data, title, domElement) {
+            var datos = google.visualization.arrayToDataTable(data);
 
-    document.getElementById('removeData').addEventListener('click', function() {
-        config.data.labels.splice(-1, 1); // remove the label first
+            var opciones = {
+                title: title,
+                curveType: 'function',
+                legend: {position: 'bottom'}
+            };
 
-        config.data.datasets.forEach(function(dataset) {
-            dataset.data.pop();
-        });
+            var grafica = new google.visualization.LineChart(domElement);
+            grafica.draw(datos, opciones);
+        }
 
-        window.myLine.update();
-    });
-</script>
+        function dibujarGrafica1() {
+            var datos = google.visualization.arrayToDataTable(sensor1Data);
+
+            var opciones = {
+                title: 'Sensor 1',
+                curveType: 'function',
+                legend: {position: 'bottom'}
+            };
+
+            var grafica = new google.visualization.LineChart(document.getElementById('graficaLinea1'));
+            grafica.draw(datos, opciones);
+        }
+
+        function dibujarGrafica2() {
+            var datos = google.visualization.arrayToDataTable(sensor2Data);
+
+            var opciones = {
+                title: 'Sensor 2',
+                curveType: 'function',
+                legend: {position: 'bottom'}
+            };
+
+            var grafica = new google.visualization.LineChart(document.getElementById('graficaLinea2'));
+            grafica.draw(datos, opciones);
+        }
+
+        function connect() {
+            webSocket = new WebSocket("ws://" + location.hostname + ":" + location.port + "/sensorsUpdate");
+            webSocket.onmessage = function (datos) {
+                getUpdateDataFromServer(datos);
+            };
+        }
+
+        function checkConnection() {
+            if (!webSocket || webSocket.readyState == 3) {
+                connect();
+            }
+        }
+
+        setInterval(checkConnection, updateTimeInterval);
+    </script>
 </body>
 </html>

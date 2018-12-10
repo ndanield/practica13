@@ -16,8 +16,9 @@ public class SensorSimulator {
         System.out.println("Sensor #"+ args[0]);
         Producer producer = new Producer();
 
-        for (int i = 0; i < 5; i++) {
-            TimeUnit.SECONDS.sleep(1);
+//        for (int i = 0; i < 5; i++) {
+        while(true) {
+            TimeUnit.SECONDS.sleep(3);
 
             String date = new SimpleDateFormat("dd/MM/YYYY HH:mm:ss").format(new Date());
             int id = Integer.parseInt(args[0]);
@@ -26,22 +27,20 @@ public class SensorSimulator {
 
             JSONObject jsonObject = new JSONObject();
 
-            jsonObject.put("fechaGeneración", date);
-            jsonObject.put("IdDispositivo", id);
-            jsonObject.put("temperatura", temperature);
-            jsonObject.put("humedad", humidicy);
+            jsonObject.put("generationDate", date);
+            jsonObject.put("idDevice", id);
+            jsonObject.put("temperature", temperature);
+            jsonObject.put("humidity", humidicy);
 
 //            Aqui se persiste el mensaje
-//            SensorMessageDAO.getInstance().create(
-//                    new SensorMessage(id,
-//                                    date,
-//                                    temperature,
-//                                    humidicy));
+            SensorMessageDAO.getInstance().create(
+                    new SensorMessage(id,
+                                    date,
+                                    temperature,
+                                    humidicy));
 
             System.out.println(jsonObject.toString());
             producer.sendMessage(topicName, jsonObject.toString());
         }
-
-        System.exit(0);
     }
 }
